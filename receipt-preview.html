@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<title>Preview biên nhận thanh toán</title>
+<style>
+  body { background: #eee; padding: 20px; font-family: Arial, sans-serif; }
+  .note { max-width: 600px; margin: 0 auto 20px; background: #fff; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #2563eb; font-size: 14px; color: #334155; }
+  .paper-wrap { display: flex; justify-content: center; }
+  .paper { background: #fff; width: 80mm; padding: 3mm 2mm; font-size: 12px; line-height: 1.4; color: #000; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 20px; }
+  .paper * { margin: 0; padding: 0; box-sizing: border-box; }
+  .paper .center { text-align: center; }
+  .paper .bold { font-weight: bold; }
+  .paper .divider { border-top: 1px dashed #000; margin: 5px 0; }
+  .paper .double-divider { border-top: 2px solid #000; margin: 5px 0; }
+  .paper .row { display: flex; justify-content: space-between; gap: 6px; }
+  .paper .title { font-size: 16px; font-weight: bold; text-transform: uppercase; margin: 4px 0; }
+  .paper .hospital { font-size: 13px; font-weight: bold; text-transform: uppercase; }
+  .paper .amount-block { text-align: center; margin: 8px 0; padding: 8px 0; border: 2px solid #000; border-radius: 4px; }
+  .paper .amount-label { font-size: 11px; color: #555; }
+  .paper .amount-value { font-size: 22px; font-weight: bold; line-height: 1; margin-top: 2px; }
+  .paper .info-label { color: #555; font-size: 11px; }
+  .paper .info-value { font-weight: bold; }
+  .paper .footer { font-size: 10px; color: #888; margin-top: 8px; text-align: center; }
+  .actions { text-align: center; margin-top: 10px; }
+  .actions button { padding: 10px 24px; background: #2563eb; color: #fff; border: 0; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  @media print {
+    body { background: #fff; padding: 0; }
+    .note, .actions { display: none; }
+    .paper-wrap { display: block; }
+    .paper { box-shadow: none; width: 80mm; padding: 2mm; margin: 0; }
+    @page { size: 80mm auto; margin: 0; }
+  }
+</style>
+</head>
+<body>
+  <div class="note">
+    <b>Preview mẫu biên nhận</b> — kích thước giấy nhiệt 80mm. Dùng dữ liệu thật từ giao dịch test TR-000001802568 của NGUYỄN VĂN TUẤN.
+    <br/>Nhấn <b>In thử</b> bên dưới để xem preview trên máy in thật (hộp thoại sẽ mở).
+  </div>
+
+  <div class="paper-wrap">
+    <div class="paper">
+      <div class="center hospital">Kiosk Thanh toán VNyTe</div>
+      <div class="double-divider"></div>
+
+      <div class="center title">Biên nhận viện phí</div>
+      <div class="center" style="font-size:11px; color:#555;">21/04/2026 12:18:40</div>
+
+      <div class="amount-block">
+        <div class="amount-label">Số tiền đã thanh toán</div>
+        <div class="amount-value">1.292.540 ₫</div>
+      </div>
+
+      <div class="divider"></div>
+      <div style="margin:4px 0;">
+        <div class="row"><span class="info-label">Mã giao dịch:</span> <span class="info-value">000001802568</span></div>
+        <div class="row"><span class="info-label">Ngân hàng:</span> <span class="info-value">PVCB</span></div>
+        <div class="row"><span class="info-label">Mã hồ sơ:</span> <span class="info-value">000000910124</span></div>
+      </div>
+
+      <div class="divider"></div>
+      <div style="margin:4px 0;">
+        <div><span class="info-label">Bệnh nhân:</span> <span class="info-value">NGUYỄN VĂN TUẤN</span></div>
+        <div class="row"><span><span class="info-label">Mã BN:</span> 0000001526</span><span><span class="info-label">NS:</span> 18/05/1989</span></div>
+        <div><span class="info-label">ICD:</span> I10 - Bệnh tăng huyết áp vô căn (nguyên phát)</div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="center" style="margin-top:6px; font-size: 11px;">
+        <b>Xin cảm ơn quý khách!</b><br/>
+        Vui lòng giữ biên nhận để đối chiếu khi cần.
+      </div>
+
+      <div class="footer">In lúc: 21/04/2026 12:19:05</div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button onclick="window.print()">In thử</button>
+  </div>
+</body>
+</html>

@@ -1,0 +1,41 @@
+{
+  "name": "cleanatrubire",
+  "version": "28.9.2026",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "electron:dev": "electron .",
+    "prepare:standalone": "node scripts/prepare-standalone.js",
+    "clean:build": "node -e \"const fs=require('node:fs');['dist-electron','.next'].forEach(d=>fs.rmSync(d,{recursive:true,force:true}))\"",
+    "electron:build": "npm run clean:build && next build && npm run prepare:standalone && electron-builder"
+  },
+  "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "@types/qrcode": "^1.5.6",
+    "dayjs": "^1.11.19",
+    "next": "16.1.1",
+    "pdf-to-printer": "^5.8.0",
+    "qrcode": "^1.5.4",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-qr-code": "^2.0.18",
+    "react-router-dom": "^6.30.3",
+    "socket.io-client": "^4.8.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

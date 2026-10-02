@@ -1,0 +1,54 @@
+appId: vn.vnyte.kiosk
+productName: VNyTe Kiosk
+copyright: VNyTe
+
+directories:
+  output: dist-electron
+  buildResources: build
+
+# Đặt tên file theo NGÀY BUILD dạng DDMMYYYY — viện nhận nhiều bản liên tiếp, nhìn tên
+# file biết ngay bản nào mới. `version` trong package.json phải là semver (28.9.2026)
+# nên không dùng thẳng được; ghép tay ở đây cho ra đúng "28092026".
+# ĐỔI TAY mỗi lần build bản mới, cùng lúc với `version` trong package.json.
+artifactName: ${productName} Setup 28092026.${ext}
+
+# App của Electron chỉ cần main/preload + package.json; Next chạy từ extraResources/standalone.
+# Loại electron/bin (SumatraPDF) khỏi asar — đưa qua extraResources để CHẠY được (exe trong asar không exec được).
+files:
+  - electron/**/*
+  - package.json
+  - "!electron/bin/**"
+
+extraResources:
+  - from: .next/standalone
+    to: standalone
+    # Chặn lồng build cũ (dist-electron/*.exe bị Next trace vào standalone) → gói phình to dồn mỗi lần build.
+    filter:
+      - "**/*"
+      - "!dist-electron/**"
+      - "!**/*.exe"
+      - "!**/*.blockmap"
+      # Chốt chặn thứ hai cho file nặng vô dụng (xem outputFileTracingExcludes ở
+      # next.config.ts): bản .zip build cũ để ở gốc từng làm installer phình 1.87GB.
+      - "!**/*.zip"
+      - "!**/*.rar"
+      - "!**/*.7z"
+      - "!**/*.docx"
+      # KHÔNG đóng gói cấu hình kiosk đã activate (lộ deviceSecret + khiến build tự-activate).
+      # Runtime luôn ghi/đọc từ userData qua KIOSK_CONFIG_PATH (xem electron/main.js).
+      - "!**/kiosk-config.json"
+  # SumatraPDF: in PDF im lặng tới máy in nhiệt (thay webContents.print bị lỗi rác trên W80).
+  - from: electron/bin/SumatraPDF.exe
+    to: bin/SumatraPDF.exe
+
+win:
+  target:
+    - nsis
+  # icon: build/icon.ico   # đặt icon vào build/ nếu có
+
+nsis:
+  oneClick: false
+  perMachine: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: VNyTe Kiosk

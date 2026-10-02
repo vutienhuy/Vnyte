@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test đọc thẻ NFC/CCCD — Kiosk</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, 'Segoe UI', Arial, sans-serif; margin: 0; background: #0f172a; color: #e2e8f0; padding: 20px; }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.sub { color: #94a3b8; margin: 0 0 18px; font-size: 14px; }
+  label { display: block; font-size: 13px; color: #cbd5e1; margin: 12px 0 4px; }
+  input, select, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font-size: 15px; }
+  textarea { font-family: Consolas, monospace; font-size: 13px; min-height: 220px; white-space: pre; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  button { margin-top: 16px; padding: 16px; width: 100%; border: 0; border-radius: 12px; font-size: 18px; font-weight: 700; cursor: pointer; }
+  .read { background: #2563eb; color: #fff; }
+  .read:active { background: #1d4ed8; }
+  .clear { background: #334155; color: #cbd5e1; }
+  .status { margin-top: 14px; padding: 12px 14px; border-radius: 10px; font-size: 15px; font-weight: 600; }
+  .ok { background: #065f46; color: #d1fae5; }
+  .err { background: #7f1d1d; color: #fee2e2; }
+  .info { background: #1e3a5f; color: #dbeafe; }
+  .fields { margin-top: 12px; display: grid; grid-template-columns: 130px 1fr; gap: 6px 12px; font-size: 14px; }
+  .fields b { color: #93c5fd; }
+  .hint { font-size: 12px; color: #64748b; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🪪 Test đọc thẻ NFC / CCCD</h1>
+  <p class="sub">Công cụ độc lập — không cần app kiosk. Chỉnh URL theo agent đầu đọc (2ID/HANEL…), đặt thẻ rồi bấm Đọc.</p>
+
+  <label>URL đầu đọc (agent cục bộ)</label>
+  <input id="url" value="http://localhost:7000/api/v1/verify?nfc=true">
+  <div class="hint">Mặc định 2ID. HANEL/khác: đổi theo tài liệu hãng.</div>
+
+  <div class="row">
+    <div>
+      <label>Method</label>
+      <select id="method"><option>GET</option><option>POST</option></select>
+    </div>
+    <div>
+      <label>Timeout (giây)</label>
+      <input id="timeout" value="15" type="number">
+    </div>
+  </div>
+
+  <label>Body (chỉ khi POST — JSON)</label>
+  <input id="body" value="" placeholder='vd: {"nfc":true}'>
+
+  <button class="read" onclick="readCard()">📲 ĐẶT THẺ & ĐỌC</button>
+  <button class="clear" onclick="document.getElementById('out').value='';document.getElementById('st').style.display='none';document.getElementById('fx').innerHTML=''">Xoá kết quả</button>
+
+  <div id="st" class="status" style="display:none"></div>
+  <div id="fx" class="fields"></div>
+
+  <label>Raw response</label>
+  <textarea id="out" readonly placeholder="(kết quả JSON hiện ở đây)"></textarea>
+</div>
+
+<script>
+function setStatus(kind, msg) {
+  var el = document.getElementById('st');
+  el.style.display = 'block';
+  el.className = 'status ' + kind;
+  el.textContent = msg;
+}
+// Dò các tên field hay gặp ở mọi shape (2ID: result.data.identifyNumber, ...)
+function deepFind(obj, keys) {
+  var found = null;
+  (function walk(o){
+    if (found || !o || typeof o !== 'object') return;
+    for (var k in o) {
+      if (keys.includes(k.toLowerCase()) && (typeof o[k] === 'string' || typeof o[k] === 'number')) { found = o[k]; return; }
+      if (typeof o[k] === 'object') walk(o[k]);
+    }
+  })(obj);
+  return found;
+}
+function showFields(json) {
+  var map = {
+    'Số CCCD': ['identifynumber','idnumber','cccd','citizenid','id','personalid'],
+    'Họ tên':  ['name','fullname','hoten'],
+    'Ngày sinh':['dateofbirth','dob','birthdate','ngaysinh'],
+    'Giới tính':['gender','sex','gioitinh'],
+    'Quốc tịch':['nationality','quoctich'],
+    'Dân tộc':  ['nation','ethnicity','dantoc'],
+    'Địa chỉ':  ['address','diachi','residence']
+  };
+  var html = '';
+  for (var label in map) {
+    var v = deepFind(json, map[label]);
+    if (v !== null && v !== '') html += '<b>'+label+'</b><span>'+String(v)+'</span>';
+  }
+  document.getElementById('fx').innerHTML = html || '<b>—</b><span>Không nhận diện được field quen thuộc (xem Raw bên dưới)</span>';
+}
+async function readCard() {
+  var url = document.getElementById('url').value.trim();
+  var method = document.getElementById('method').value;
+  var to = (parseInt(document.getElementById('timeout').value) || 15) * 1000;
+  var body = document.getElementById('body').value.trim();
+  document.getElementById('out').value = '';
+  document.getElementById('fx').innerHTML = '';
+  setStatus('info', '⏳ Đang gọi đầu đọc… đặt thẻ vào vị trí.');
+  var ctrl = new AbortController();
+  var timer = setTimeout(function(){ ctrl.abort(); }, to);
+  try {
+    var opt = { method: method, signal: ctrl.signal };
+    if (method === 'POST') { opt.headers = {'Content-Type':'application/json'}; opt.body = body || '{}'; }
+    var t0 = performance.now();
+    var res = await fetch(url, opt);
+    var raw = await res.text();
+    clearTimeout(timer);
+    var dur = Math.round(performance.now() - t0);
+    var json; try { json = JSON.parse(raw); } catch(e) { json = null; }
+    document.getElementById('out').value = json ? JSON.stringify(json, null, 2) : raw;
+    if (res.ok) { setStatus('ok', '✅ HTTP '+res.status+' • '+dur+'ms — đọc OK'); if (json) showFields(json); }
+    else { setStatus('err', '⚠️ HTTP '+res.status+' • '+dur+'ms — agent trả lỗi (xem Raw)'); }
+  } catch (e) {
+    clearTimeout(timer);
+    var m = String(e && e.message || e);
+    if (e.name === 'AbortError') setStatus('err', '⏱️ Timeout — đầu đọc không phản hồi (chưa đọc được thẻ / agent treo).');
+    else setStatus('err', '❌ '+m+' — thường là: agent chưa chạy / sai URL / bị CORS (mở thẳng URL trên thanh địa chỉ để loại trừ CORS).');
+  }
+}
+</script>
+</body>
+</html>

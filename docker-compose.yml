@@ -1,0 +1,15 @@
+version: '3.9'
+services:
+  nextjs-app:
+    build: .
+    container_name: nextjs-app
+    ports:
+      - "3000:3000"
+    # Biến server-side (HOSPITAL_BASE_URL, HOSPITAL_API_KEY, ...) đọc từ
+    # .env.production — cùng file dùng lúc build nên không bị lệch cấu hình.
+    # Sửa .env.production rồi `docker compose up -d` là đủ.
+    env_file:
+      - .env.production
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped

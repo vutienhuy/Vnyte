@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIoT Reader Sniffer — bắt event Socket.IO</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, 'Segoe UI', Arial, sans-serif; margin: 0; background: #0f172a; color: #e2e8f0; padding: 16px; }
+  .wrap { max-width: 820px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 10px; }
+  label { font-size: 13px; color: #cbd5e1; }
+  input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font-size: 15px; margin: 4px 0 10px; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  button { padding: 12px 14px; border: 0; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .primary { background: #2563eb; color: #fff; }
+  .warn { background: #b45309; color: #fff; }
+  .ghost { background: #334155; color: #cbd5e1; }
+  #status { padding: 10px 12px; border-radius: 8px; font-weight: 700; margin-bottom: 10px; }
+  .on { background: #065f46; color: #d1fae5; }
+  .off { background: #7f1d1d; color: #fee2e2; }
+  #log { width: 100%; min-height: 360px; background: #0b1120; border: 1px solid #334155; border-radius: 8px; color: #86efac; font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; padding: 10px; }
+  .hint { font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📡 AIoT Reader Sniffer (Socket.IO)</h1>
+  <label>URL server AIoT</label>
+  <input id="url" value="http://localhost:8000">
+  <div class="btns">
+    <button class="primary" onclick="connect()">🔌 Kết nối + nghe TẤT CẢ event</button>
+    <button class="warn" onclick="trigger('/read_card_again','')">↻ /read_card_again</button>
+    <button class="warn" onclick="trigger('/get_qr','')">▣ /get_qr</button>
+    <button class="ghost" onclick="trigger('/info_set','ping')">/info_set ping</button>
+    <button class="ghost" onclick="document.getElementById('log').textContent=''">Xoá log</button>
+  </div>
+  <div class="hint">Bấm Kết nối → ĐẶT THẺ CCCD lên đầu đọc → xem event nào hiện ra kèm dữ liệu. Gửi lại toàn bộ log này cho kỹ thuật.</div>
+  <div id="status" class="off">⚪ Chưa kết nối</div>
+  <div id="log"></div>
+</div>
+
+<script>
+var socket = null;
+function ts(){ return new Date().toISOString().replace('T',' ').split('.')[0]; }
+function logLine(s){ var el=document.getElementById('log'); el.textContent += '['+ts()+'] '+s+'\n'; el.scrollTop = el.scrollHeight; }
+function setStatus(on, msg){ var el=document.getElementById('status'); el.className = on?'on':'off'; el.textContent = msg; }
+
+function connect(){
+  var url = document.getElementById('url').value.trim().replace(/\/$/,'');
+  logLine('Đang tải client socket.io từ '+url+'/socket.io/socket.io.js ...');
+  // Tải thư viện client NGAY TỪ server AIoT (không cần internet)
+  var s = document.createElement('script');
+  s.src = url + '/socket.io/socket.io.js';
+  s.onload = function(){ logLine('Đã tải client. Đang kết nối...'); doConnect(url); };
+  s.onerror = function(){ setStatus(false,'❌ Không tải được socket.io client từ server (sai URL / server chưa chạy?)'); };
+  document.head.appendChild(s);
+}
+
+function doConnect(url){
+  try {
+    if (socket) { try { socket.close(); } catch(e){} }
+    socket = io(url, { transports: ['websocket','polling'], reconnection: true });
+    socket.on('connect', function(){ setStatus(true,'🟢 Đã kết nối: '+socket.id+' — HÃY ĐẶT THẺ'); logLine('CONNECTED id='+socket.id); });
+    socket.on('disconnect', function(r){ setStatus(false,'🔴 Mất kết nối: '+r); logLine('DISCONNECT '+r); });
+    socket.on('connect_error', function(e){ setStatus(false,'❌ Lỗi kết nối: '+e.message); logLine('CONNECT_ERROR '+e.message); });
+    // Bắt MỌI event + payload
+    socket.onAny(function(event){
+      var args = Array.prototype.slice.call(arguments,1);
+      var dump = args.map(function(a){ try { return typeof a==='string'? a : JSON.stringify(a); } catch(e){ return String(a);} }).join(' | ');
+      logLine('◀ EVENT "'+event+'"  →  '+ (dump.length>4000? dump.slice(0,4000)+'…[cắt]' : dump));
+    });
+  } catch(e){ setStatus(false,'❌ '+e.message); logLine('EX '+e.message); }
+}
+
+function trigger(ev, data){
+  if (!socket || !socket.connected){ logLine('Chưa kết nối — bấm Kết nối trước.'); return; }
+  socket.emit(ev, data);
+  logLine('▶ emit "'+ev+'" '+JSON.stringify(data));
+}
+</script>
+</body>
+</html>
